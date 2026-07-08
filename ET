@@ -1,0 +1,377 @@
+import time
+
+# ==========================================
+# 1. DATOS INICIALES DEL SISTEMA
+# ==========================================
+juegos_iniciales = {
+    'G001': ['Eclipse Runner', 'PC', 'accion', 'T', True, 'NovaStudio'],
+    'G002': ['Puzzle Atlas', 'Switch', 'puzzle', 'E', False, 'BrightWorks'],
+    'G003': ['Sky Legends', 'PS5', 'aventura', 'T', True, 'OrionGames'],
+    'G004': ['Racing Pulse', 'PC', 'carreras', 'E', True, 'VelocityLab'],
+    'G005': ['Mystic Farm', 'Switch', 'simulacion', 'E', False, 'GreenSeed'],
+    'G006': ['Shadow Tactics', 'Xbox', 'estrategia', 'M', False, 'IronGate']
+}
+
+kit_inicio = {
+    'G001': [9990, 7],
+    'G002': [19990, 0],
+    'G003': [42990, 3],
+    'G004': [14990, 5],
+    'G005': [17990, 9],
+    'G006': [39990, 2]
+}
+
+# Colores para estetica 
+
+VERDE = '\033[32m'
+ROJO = '\033[31m'
+NORMAL = '\033[0m'
+
+
+# ==========================================
+# 2. FUNCIONES DE LECTURA Y CONTROL
+# ==========================================
+
+def leer_op():
+    """Solicita la opción del menú y valida que sea un entero entre 1 y 6."""
+    try:
+        op = int(input("Ingrese opción: "))
+        if 1 <= op <= 6:
+            return op
+        else:
+            print(f"Debe seleccionar una opción válida")
+            time.sleep(1)
+            return None
+    except ValueError:
+        print(f"Debe seleccionar una opción válida")
+        time.sleep(1)
+        return None
+
+
+def buscar_code(code, dicc_juegos=None):
+    """Retorna True si el código existe en el diccionario (case-insensitive)."""
+    if dicc_juegos is None:
+        return False
+    return code.upper() in [k.upper() for k in dicc_juegos.keys()]
+
+
+def key_real(code, dicc_juegos):
+    """Retorna la clave exacta tal como está guardada en el diccionario."""
+    for k in dicc_juegos.keys():
+        if k.upper() == code.upper():
+            return k
+    return code.upper()
+
+
+# ==========================================
+# 3. FUNCIONES OPCIÓN 1 Y 2
+# ==========================================
+
+def stock_plataforma(plataforma, dicc_juegos=None, dicc_inventario=None):
+    """Calcula y muestra el stock total para una plataforma específica."""
+    time.sleep(0.5)
+    total_stock = 0
+    if dicc_juegos and dicc_inventario:
+        for code, datos in dicc_juegos.items():
+            if datos[1].lower() == plataforma.lower():
+                if code in dicc_inventario:
+                    total_stock += dicc_inventario[code][1]
+    print(f"El total de stock disponibles es: {total_stock}")
+    time.sleep(1)
+
+
+def busqueda_precio(p_min, p_max, dicc_juegos=None, dicc_inventario=None):
+    """Busca juegos por rango de precio con stock > 0 y los muestra ordenados."""
+    time.sleep(0.5)
+    resultados = []
+    if dicc_juegos and dicc_inventario:
+        for code, datos_inv in dicc_inventario.items():
+            precio = datos_inv[0]
+            stock = datos_inv[1]
+            if p_min <= precio <= p_max and stock > 0:
+                if code in dicc_juegos:
+                    titulo = dicc_juegos[code][0]
+                    resultados.append(f"{titulo}--{code}")
+        
+    if resultados:
+        resultados.sort()
+        print("Los juegos encontrados son:")
+        for indice, juego in enumerate(resultados, start=1):
+            print(f"{indice}. {juego}")
+    else:
+        print("No hay juegos en ese rango de precios.")
+    time.sleep(1)
+
+
+# ==========================================
+# 4. FUNCIONES OPCIÓN 3 — ACTUALIZAR PRECIO
+# ==========================================
+
+def actualizar_precio(code, nuevo_precio, dicc_juegos=None, dicc_inventario=None):
+    """Actualiza el precio de un juego si este existe."""
+    if buscar_code(code, dicc_juegos):
+        clave_exacta = key_real(code, dicc_juegos)
+        dicc_inventario[clave_exacta][0] = nuevo_precio
+        return True
+    return False
+
+
+# ==========================================
+# 5. FUNCIONES OPCIÓN 4 — AGREGAR JUEGO (VALIDACIONES ESTRICTAS)
+# ==========================================
+
+def validar_codigo(code):
+    
+    if not code or code.isspace():
+        return False
+    return code.upper().startswith('G') and code[1:].isdigit()
+
+def validar_titulo(titulo):
+    
+    return bool(titulo and not titulo.isspace() and len(titulo) >= 2)
+
+def validar_plataforma(plataforma):
+    
+    plataformas_validas = ['PC', 'SWITCH', 'PS5', 'XBOX', 'PS4', 'XBOX SERIES']
+    return plataforma.upper() in plataformas_validas
+
+def validar_genero(genero):
+    
+    generos_validos = ['ACCION', 'PUZZLE', 'AVENTURA', 'CARRERAS', 'SIMULACION', 'ESTRATEGIA', 'RPG', 'TERROR', 'DEPORTES']
+    return genero.upper() in generos_validos
+
+def validar_clasificacion(clasificacion):
+    return clasificacion in ['E', 'T', 'M']
+
+def validar_multiplayer(multiplayer):
+    return multiplayer.lower() in ['s', 'n']
+
+def validar_editor(editor):
+    
+    return bool(editor and not editor.isspace() and len(editor) >= 2)
+
+def validar_precio(precio):
+    try:
+        val = int(precio)
+        return val > 0
+    except ValueError:
+        return False
+
+def validar_stock(stock):
+    try:
+        val = int(stock)
+        return val >= 0
+    except ValueError:
+        return False
+
+
+def agregar_juego(code, titulo, plataforma, genero, clasificacion, multiplayer, editor, precio, stock, dicc_juegos=None, dicc_inventario=None):
+    """Registra el juego en ambos diccionarios si el código no está duplicado."""
+    if buscar_code(code, dicc_juegos):
+        return False
+        
+    cod_upper = code.upper()
+    es_multi = True if multiplayer.lower() == 's' else False
+    
+    dicc_juegos[cod_upper] = [titulo, plataforma, genero, clasificacion, es_multi, editor]
+    dicc_inventario[cod_upper] = [int(precio), int(stock)]
+    return True
+
+
+# ==========================================
+# 6. FUNCIONES OPCIÓN 5 — ELIMINAR JUEGO
+# ==========================================
+
+def eliminar_juego(code, dicc_juegos=None, dicc_inventario=None):
+    """Elimina el juego de ambos diccionarios si existe."""
+    if buscar_code(code, dicc_juegos):
+        clave_exacta = key_real(code, dicc_juegos)
+        del dicc_juegos[clave_exacta]
+        del dicc_inventario[clave_exacta]
+        return True
+    return False
+
+
+# ==========================================
+# 7. PROGRAMA PRINCIPAL
+# ==========================================
+
+def main():
+    juegos = juegos_iniciales.copy()
+    inventario = kit_inicio.copy()
+    
+    while True:
+        print("\n========== MENÚ PRINCIPAL ==========")
+        print("1. Stock por plataforma")
+        print("2. Búsqueda de juegos por rango de precio")
+        print("3. Actualizar precio de juego")
+        print("4. Agregar juego")
+        print("5. Eliminar juego")
+        print("6. Salir")
+        print("=====================================")
+        
+        op = leer_op()
+        if op is None:
+            continue
+        
+        # ------------------------------------------
+        # OPCIÓN 1: Stock por plataforma
+        # ------------------------------------------
+
+        if op == 1:
+            plat = input("Ingrese plataforma a consultar: ")
+            stock_plataforma(plat, dicc_juegos=juegos, dicc_inventario=inventario)
+            
+        # ------------------------------------------
+        # OPCIÓN 2: Búsqueda por rango de precio
+        # ------------------------------------------
+
+        elif op == 2:
+            while True:
+                try:
+                    p_min = int(input("Ingrese precio mínimo: "))
+                    p_max = int(input("Ingrese precio máximo: "))
+                    if p_min >= 0 and p_max >= 0 and p_min <= p_max:
+                        busqueda_precio(p_min, p_max, dicc_juegos=juegos, dicc_inventario=inventario)
+                        break
+                    else:
+                        print("Debe ingresar valores válidos (p_min <= p_max y ambos positivos).\n")
+                        time.sleep(1)
+                except ValueError:
+                    print("Debe ingresar valores enteros\n")
+                    time.sleep(1)
+                    
+        # ------------------------------------------
+        # OPCIÓN 3: Actualizar precio de juego
+        # ------------------------------------------
+
+        elif op == 3:
+            while True:
+                code = input("Ingrese código del juego: ")
+                try:
+                    nuevo_p = int(input("Ingrese nuevo precio: "))
+                    if nuevo_p <= 0:
+                        print("El precio debe ser un valor entero positivo.\n")
+                        time.sleep(1)
+                        continue
+                except ValueError:
+                    print("Debe ingresar valores enteros\n")
+                    time.sleep(1)
+                    continue
+                
+                time.sleep(0.3)
+                if actualizar_precio(code, nuevo_p, dicc_juegos=juegos, dicc_inventario=inventario):
+                    print(f"{VERDE}Precio actualizado{NORMAL}")
+                else:
+                    print(f"El código {ROJO}no existe{NORMAL}")
+                
+                time.sleep(1)
+                resp = input("\n¿Desea actualizar otro precio (s/n)?: ").lower()
+                if resp == 'n':
+                    break
+
+        # ------------------------------------------
+        # OPCIÓN 4: Agregar juego
+        # ------------------------------------------
+
+        elif op == 4:
+            
+            while True:
+                code = input("Ingrese código del juego: ")
+                if not validar_codigo(code):
+                    print(f"Código {ROJO}inválido{NORMAL}. Debe empezar con 'G' seguido de números.")
+                    continue
+                if buscar_code(code, juegos):
+                    print(f"El código ya existe. Ingrese otro.")
+                    continue
+                break  
+
+            
+            while True:
+                tit = input("Ingrese título: ")
+                if validar_titulo(tit):
+                    break
+                print(f"Título {ROJO}inválido{NORMAL}.")
+
+            
+            while True:
+                plat = input("Ingrese plataforma: ")
+                if validar_plataforma(plat):
+                    break
+                print(f"Plataforma {ROJO}inválida{NORMAL}. (Use PC, Switch, PS5, Xbox).")
+
+            
+            while True:
+                gen = input("Ingrese género: ")
+                if validar_genero(gen):
+                    break
+                print(f"Género {ROJO}inválido{NORMAL}. (Ej: Accion, Aventura, Puzzle, Carreras).")
+
+           
+            while True:
+                clas = input("Ingrese clasificación: ")
+                if validar_clasificacion(clas):
+                    break
+                print("Clasificación debe ser 'E', 'T' o 'M'.")
+
+            
+            while True:
+                multi = input("¿Es multiplayer? (s/n): ")
+                if validar_multiplayer(multi):
+                    break
+                print("Debe ingresar 's' o 'n'.")
+
+            
+            while True:
+                edit = input("Ingrese editor: ")
+                if validar_editor(edit):
+                    break
+                print(f"Editor {ROJO}inválido{NORMAL}.")
+
+           
+            while True:
+                prec = input("Ingrese precio: ")
+                if validar_precio(prec):
+                    break
+                print("Precio debe ser un entero mayor que cero.")
+
+          
+            while True:
+                stk = input("Ingrese stock: ")
+                if validar_stock(stk):
+                    break
+                print("Stock debe ser un entero mayor o igual a cero.")
+            
+            
+            time.sleep(0.5)
+            if agregar_juego(code, tit, plat, gen, clas, multi, edit, prec, stk, dicc_juegos=juegos, dicc_inventario=inventario):
+                print(f"{VERDE}Juego agregado con exito!{NORMAL}")
+            else:
+                print(f"[!]Error al agregar el juego, porfavor revisar correctamnete los valores ingresados.")
+            time.sleep(1)
+
+        # ------------------------------------------
+        # OPCIÓN 5: Eliminar juego
+        # ------------------------------------------
+
+        elif op == 5:
+            code = input("Ingrese código del juego que desea eliminar: ")
+            time.sleep(0.5)
+            if eliminar_juego(code, dicc_juegos=juegos, dicc_inventario=inventario):
+                print(f"{VERDE}Juego eliminado{NORMAL}")
+            else:
+                print(f"El código {ROJO}no existe{NORMAL}")
+            time.sleep(1)
+
+        # ------------------------------------------
+        # OPCIÓN 6: Salir
+        # ------------------------------------------
+
+        elif op == 6:
+            time.sleep(0.3)
+            print("[!] Programa finalizado, gracias y vuelva pronto.")
+            break
+
+
+if __name__ == "__main__":
+    main()
